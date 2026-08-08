@@ -10,6 +10,7 @@ demo or before a client has connected their real accounts.
 """
 import logging
 import smtplib
+import threading
 from email.mime.text import MIMEText
 
 import httpx
@@ -64,7 +65,7 @@ def _send_email(subject: str, body: str) -> bool:
         msg["Subject"] = subject
         msg["From"] = settings.SMTP_USER
         msg["To"] = settings.OWNER_EMAIL
-        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
+        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as server:
             server.starttls()
             server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
             server.send_message(msg)
@@ -93,6 +94,16 @@ def _dispatch(subject: str, body: str) -> None:
         )
 
 
+def _dispatch_async(subject: str, body: str) -> None:
+    """Fire the actual sends on a background thread so a slow/hanging SMTP or
+    webhook connection can never stall the chat response the customer is
+    waiting on. The lead is already saved to the DB by this point — the
+    notification is a side effect, not something the user should have to
+    wait on.
+    """
+    threading.Thread(target=_dispatch, args=(subject, body), daemon=True).start()
+
+
 def notify_new_lead(lead: Lead) -> None:
     kind = "Quote request" if lead.lead_type == "quote_request" else "Booking request"
     lines = [
@@ -111,7 +122,7 @@ def notify_new_lead(lead: Lead) -> None:
     if lead.notes:
         lines.append(f"Notes: {lead.notes}")
     body = "\n".join(lines)
-    _dispatch(subject=f"New {kind} — {settings.BUSINESS_NAME}", body=body)
+    _dispatch_async(subject=f"New {kind} — {settings.BUSINESS_NAME}", body=body)
 
 
 def notify_complaint(ticket: SupportTicket) -> None:
@@ -120,4 +131,4 @@ def notify_complaint(ticket: SupportTicket) -> None:
         f"Session: {ticket.session_id}\n"
         f"Message: {ticket.message}"
     )
-    _dispatch(subject=f"Complaint escalation — {settings.BUSINESS_NAME}", body=body)
+    _dispatch_async(subject=f"Complaint escalation — {settings.BUSINESS_NAME}", body=body)
