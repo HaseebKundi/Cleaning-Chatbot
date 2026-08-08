@@ -57,7 +57,35 @@ def _send_slack(body: str) -> bool:
         return False
 
 
-def _send_email(subject: str, body: str) -> bool:
+def _send_email_resend(subject: str, body: str) -> bool:
+    """HTTP-based email send via Resend's API. Preferred over raw SMTP because
+    it goes over HTTPS (port 443) — SMTP ports (587/465/25) are blocked
+    outbound on some hosts, including Render, which raw smtplib has no way
+    around. Free tier: 100 emails/day, no domain verification needed if
+    sending from the default onboarding@resend.dev sender.
+    """
+    if not (settings.RESEND_API_KEY and settings.OWNER_EMAIL):
+        return False
+    try:
+        resp = httpx.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {settings.RESEND_API_KEY}"},
+            json={
+                "from": settings.RESEND_FROM_EMAIL,
+                "to": [settings.OWNER_EMAIL],
+                "subject": subject,
+                "text": body,
+            },
+            timeout=10,
+        )
+        resp.raise_for_status()
+        return True
+    except Exception as e:
+        logger.warning(f"Resend email notification failed: {e}")
+        return False
+
+
+def _send_email_smtp(subject: str, body: str) -> bool:
     if not (settings.SMTP_HOST and settings.SMTP_USER and settings.SMTP_PASSWORD and settings.OWNER_EMAIL):
         return False
     try:
@@ -71,8 +99,17 @@ def _send_email(subject: str, body: str) -> bool:
             server.send_message(msg)
         return True
     except Exception as e:
-        logger.warning(f"Email notification failed: {e}")
+        logger.warning(f"SMTP email notification failed: {e}")
         return False
+
+
+def _send_email(subject: str, body: str) -> bool:
+    """Try Resend (HTTPS) first — works on hosts that block SMTP ports.
+    Falls back to raw SMTP for local dev or hosts where SMTP is open.
+    """
+    if _send_email_resend(subject, body):
+        return True
+    return _send_email_smtp(subject, body)
 
 
 def _dispatch(subject: str, body: str) -> None:
