@@ -29,6 +29,12 @@ REQUIRED_FIELDS = {
     "quote_request": ["service_type", "home_size", "zip_code"],
     "booking_request": ["name", "phone", "preferred_datetime", "zip_code"],
 }
+# Fields worth capturing opportunistically even when not required to complete
+# the lead — e.g. a customer often volunteers their name during a quote
+# request even though a quote doesn't strictly need it. We still only ever
+# *ask* for the REQUIRED_FIELDS; this just stops us from throwing away
+# identity info the customer already gave us unprompted.
+OPTIONAL_FIELDS = ["name", "phone", "email"]
 
 FIELD_QUESTIONS = {
     "service_type": "What kind of cleaning are you looking for — standard, deep, move-out, or recurring?",
@@ -104,11 +110,16 @@ def classify_intent(message: str, history: list[dict]) -> tuple[str, float]:
 
 def extract_fields(lead_type: str, message: str, history: list[dict], existing: dict) -> dict:
     history_text = "\n".join(f"{h['role']}: {h['content']}" for h in history[-6:])
-    fields = REQUIRED_FIELDS[lead_type]
+    # Always try to capture required fields, plus any optional identity fields
+    # (name/phone/email) not already required for this lead_type — so a
+    # customer volunteering their name during a quote request doesn't get lost.
+    required = REQUIRED_FIELDS[lead_type]
+    fields = required + [f for f in OPTIONAL_FIELDS if f not in required]
     system = (
         f"Extract these fields from the conversation if present: {', '.join(fields)}. "
         f"Already known: {json.dumps(existing)}. "
         "Only extract new information from the latest message and recent context. "
+        "Only fill a field if the customer actually stated it — never guess or infer. "
         'Respond ONLY as JSON with those exact keys, using null for anything not mentioned. '
         'Example: {"service_type": "deep clean", "home_size": null, "zip_code": "33101"}'
     )
