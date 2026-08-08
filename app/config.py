@@ -40,6 +40,12 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = ""
     OWNER_EMAIL: str = ""
 
+    # HTTP-based email fallback (Resend). Use this instead of SMTP_* when the
+    # host blocks outbound SMTP ports (Render, some other PaaS do) — Resend
+    # sends over plain HTTPS, so it doesn't hit that restriction.
+    RESEND_API_KEY: str = ""
+    RESEND_FROM_EMAIL: str = "onboarding@resend.dev"
+
     # --- Agent behavior ---
     CONFIDENCE_THRESHOLD: float = 0.55  # below this, ask a clarifying question instead of guessing
 
