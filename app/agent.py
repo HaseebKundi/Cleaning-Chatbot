@@ -27,14 +27,15 @@ INTENTS = ["quote_request", "booking_request", "faq", "complaint", "chitchat"]
 
 REQUIRED_FIELDS = {
     "quote_request": ["service_type", "home_size", "zip_code"],
-    "booking_request": ["name", "phone", "preferred_datetime", "zip_code"],
+    "booking_request": ["name", "phone", "preferred_datetime", "address"],
 }
+
 # Fields worth capturing opportunistically even when not required to complete
 # the lead — e.g. a customer often volunteers their name during a quote
 # request even though a quote doesn't strictly need it. We still only ever
 # *ask* for the REQUIRED_FIELDS; this just stops us from throwing away
 # identity info the customer already gave us unprompted.
-OPTIONAL_FIELDS = ["name", "phone", "email"]
+OPTIONAL_FIELDS = ["name", "phone", "email", "zip_code"]
 
 FIELD_QUESTIONS = {
     "service_type": "What kind of cleaning are you looking for — standard, deep, move-out, or recurring?",
@@ -43,6 +44,7 @@ FIELD_QUESTIONS = {
     "name": "Can I grab your name?",
     "phone": "What's the best phone number to reach you at?",
     "preferred_datetime": "What day/time works best for you?",
+    "address": "What's the full address — street, house/apartment number, and city — where you'd like the cleaning done?",
 }
 
 
@@ -185,6 +187,7 @@ def node_slot_filling(state: AgentState) -> AgentState:
             service_type=fields.get("service_type"),
             home_size=fields.get("home_size"),
             zip_code=fields.get("zip_code"),
+            address=fields.get("address"),
             preferred_datetime=fields.get("preferred_datetime"),
             notes=fields.get("notes"),
             status="new",
@@ -316,19 +319,32 @@ _graph = build_graph()
 def run_agent(session_id: str, message: str) -> dict:
     history = memory.get_history(session_id)
     fields = memory.get_lead_fields(session_id)
+    active_intent = memory.get_active_intent(session_id)
 
     state: AgentState = {
         "session_id": session_id,
         "message": message,
         "history": history,
-        "intent": "",
-        "confidence": 0.0,
+        "intent": active_intent or "",
+        "confidence": 1.0 if active_intent else 0.0,
         "fields": fields,
         "response": "",
         "lead_saved": False,
     }
 
-    result = _graph.invoke(state)
+    if active_intent:
+        # Already mid-way through collecting a quote or booking — keep going
+        # with that same intent instead of re-classifying every short reply.
+        # (A bare zip code or "standard" has too little context alone and can
+        # otherwise get misread as a different intent, flipping the flow.)
+        result = node_slot_filling(state)
+    else:
+        result = _graph.invoke(state)
+        if result["intent"] in REQUIRED_FIELDS and not result["lead_saved"]:
+            memory.set_active_intent(session_id, result["intent"])
+
+    if result["lead_saved"]:
+        memory.clear_active_intent(session_id)
 
     memory.add_message(session_id, "user", message)
     memory.add_message(session_id, "assistant", result["response"])
