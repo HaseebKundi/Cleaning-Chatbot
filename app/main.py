@@ -11,7 +11,7 @@ import logging
 
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
@@ -50,6 +50,13 @@ def on_startup():
 @app.get("/health")
 def health():
     return {"status": "ok", "business": settings.BUSINESS_NAME}
+
+
+@app.get("/")
+def root():
+    # So visiting the bare domain (what you'd naturally type or share) opens
+    # the chat widget directly, instead of FastAPI's default 404 for "/".
+    return RedirectResponse(url="/widget/")
 
 
 @app.post("/chat", response_model=ChatResponse)
