@@ -12,6 +12,7 @@ MAX_TURNS = 12  # trim history so prompts don't grow unbounded over a long chat
 
 _history: dict[str, list[dict[str, str]]] = defaultdict(list)
 _lead_fields: dict[str, dict[str, Any]] = defaultdict(dict)
+_active_intent: dict[str, str] = {}
 
 
 def get_history(session_id: str) -> list[dict[str, str]]:
@@ -38,3 +39,21 @@ def update_lead_fields(session_id: str, updates: dict[str, Any]) -> dict[str, An
 
 def clear_lead_fields(session_id: str) -> None:
     _lead_fields[session_id] = {}
+
+
+def get_active_intent(session_id: str) -> str | None:
+    """Which slot-filling flow (quote_request/booking_request) this session is
+    already mid-way through, if any. Once set, the agent skips re-classifying
+    every short reply — a bare '22' or 'standard' has too little context on
+    its own and can otherwise get misread as a different intent, causing the
+    bot to flip flows mid-conversation and ask for the wrong thing.
+    """
+    return _active_intent.get(session_id)
+
+
+def set_active_intent(session_id: str, intent: str) -> None:
+    _active_intent[session_id] = intent
+
+
+def clear_active_intent(session_id: str) -> None:
+    _active_intent.pop(session_id, None)
