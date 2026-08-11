@@ -29,6 +29,7 @@ class LeadOut(BaseModel):
     service_type: str | None = None
     home_size: str | None = None
     zip_code: str | None = None
+    address: str | None = None
     preferred_datetime: str | None = None
     notes: str | None = None
     status: str
