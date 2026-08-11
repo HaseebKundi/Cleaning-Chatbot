@@ -154,6 +154,8 @@ def notify_new_lead(lead: Lead) -> None:
         lines.append(f"Home size: {lead.home_size}")
     if lead.zip_code:
         lines.append(f"Zip/area: {lead.zip_code}")
+    if lead.address:
+        lines.append(f"Address: {lead.address}")
     if lead.preferred_datetime:
         lines.append(f"Preferred time: {lead.preferred_datetime}")
     if lead.notes:
