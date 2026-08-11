@@ -34,6 +34,7 @@ class Lead(Base):
     service_type: Mapped[str | None] = mapped_column(String, nullable=True)
     home_size: Mapped[str | None] = mapped_column(String, nullable=True)
     zip_code: Mapped[str | None] = mapped_column(String, nullable=True)
+    address: Mapped[str | None] = mapped_column(String, nullable=True)
     preferred_datetime: Mapped[str | None] = mapped_column(String, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
