@@ -16,7 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.database import Base, engine, get_db
+from app.database import Base, engine, get_db, run_lightweight_migrations
 from app.models import Lead, SupportTicket
 from app.schemas import ChatRequest, ChatResponse, LeadOut, TicketOut
 from app.agent import run_agent
@@ -39,6 +39,7 @@ app.add_middleware(
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
+    run_lightweight_migrations()
     try:
         count = rag.load_faq_into_chroma()
         logger.info(f"Loaded {count} FAQ entries into Chroma.")
@@ -94,4 +95,4 @@ def get_tickets(db: Session = Depends(get_db)):
 
 
 # Serve the chat widget statically at /widget
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+app.mount("/widget", StaticFiles(directory="static", html=True), name="widget")
