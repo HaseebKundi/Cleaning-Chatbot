@@ -1,38 +1,81 @@
-[
-  {
-    "question": "What areas do you service?",
-    "answer": "We currently service the greater Tampa Bay area, including St. Petersburg, Clearwater, and Brandon. If you're outside this area, let us know your zip code and we'll confirm whether we can still help."
-  },
-  {
-    "question": "What's included in a standard clean vs. a deep clean?",
-    "answer": "A standard clean covers dusting, vacuuming, mopping, kitchen and bathroom surfaces, and general tidying. A deep clean adds baseboards, inside appliances, window sills, grout scrubbing, and detailed work in high-buildup areas — recommended for first-time cleanings or homes not cleaned in a while."
-  },
-  {
-    "question": "Do you bring your own supplies? Are they pet/child safe or eco-friendly?",
-    "answer": "Yes, we bring all our own supplies and equipment at no extra cost. We use pet- and child-safe, eco-friendly products by default. Let us know if you'd like us to use specific products you already have at home."
-  },
-  {
-    "question": "Are you insured and bonded?",
-    "answer": "Yes, we're fully licensed, insured, and bonded. Proof of insurance is available on request."
-  },
-  {
-    "question": "How much does a typical cleaning cost?",
-    "answer": "Pricing depends on home size and service type. As a general range, standard cleanings typically run $100-$180 and deep cleanings $180-$300 for an average 2-3 bedroom home. For an exact quote, I can collect a few details and get you an estimate."
-  },
-  {
-    "question": "Do you offer recurring/weekly/biweekly discounts?",
-    "answer": "Yes, we offer discounted rates for recurring service: weekly, biweekly, and monthly plans all get a lower per-visit price than a one-time cleaning."
-  },
-  {
-    "question": "What's your cancellation/rescheduling policy?",
-    "answer": "We ask for at least 24 hours notice to cancel or reschedule without a fee. Cancellations with less notice may incur a small fee to cover the reserved time slot."
-  },
-  {
-    "question": "Do I need to be home during the cleaning?",
-    "answer": "No, most of our clients aren't home during their cleaning. We can coordinate entry via a lockbox, garage code, or key — whatever you're comfortable with."
-  },
-  {
-    "question": "How do I pay?",
-    "answer": "We accept card payments online after each cleaning, as well as cash or check by arrangement. Recurring clients can save a card on file for automatic billing."
-  }
-]
+diff --git a/app/config.py b/app/config.py
+index dff517c..6338bc9 100644
+--- a/app/config.py
++++ b/app/config.py
+@@ -18,7 +18,7 @@ class Settings(BaseSettings):
+     DATABASE_URL: str = "sqlite:///./cleaning_chatbot.db"
+ 
+     # --- Branding (per client) ---
+-    BUSINESS_NAME: str = "Sparkle Clean Co."
++    BUSINESS_NAME: str = "Bright Nest Cleaning Co."
+     BUSINESS_TIMEZONE: str = "America/New_York"
+ 
+     # --- CORS ---
+diff --git a/data/faq.json b/data/faq.json
+index 0b66a4d..6051a04 100644
+--- a/data/faq.json
++++ b/data/faq.json
+@@ -1,15 +1,19 @@
+ [
+   {
+     "question": "What areas do you service?",
+-    "answer": "We currently service the greater Tampa Bay area, including St. Petersburg, Clearwater, and Brandon. If you're outside this area, let us know your zip code and we'll confirm whether we can still help."
++    "answer": "We service the greater Orlando area, including Winter Park, Lake Nona, Baldwin Park, Dr. Phillips, Winter Garden, and Kissimmee. If you're just outside this range, let us know your zip code and we'll confirm whether we can still help."
+   },
+   {
+     "question": "What's included in a standard clean vs. a deep clean?",
+-    "answer": "A standard clean covers dusting, vacuuming, mopping, kitchen and bathroom surfaces, and general tidying. A deep clean adds baseboards, inside appliances, window sills, grout scrubbing, and detailed work in high-buildup areas — recommended for first-time cleanings or homes not cleaned in a while."
++    "answer": "A standard clean covers dusting, vacuuming, mopping, kitchen and bathroom surfaces, and general tidying. A deep clean adds baseboards, inside appliances, window sills, ceiling fans, grout scrubbing, and detailed work in high-buildup areas — recommended for first-time cleanings or homes not cleaned in a while."
++  },
++  {
++    "question": "Do you do move-in/move-out cleanings?",
++    "answer": "Yes — move-in and move-out cleanings are one of our most requested services. These are deep-clean level and cover inside cabinets, closets, appliances, and baseboards, so the space is ready for a final walkthrough or new tenant."
+   },
+   {
+     "question": "Do you bring your own supplies? Are they pet/child safe or eco-friendly?",
+-    "answer": "Yes, we bring all our own supplies and equipment at no extra cost. We use pet- and child-safe, eco-friendly products by default. Let us know if you'd like us to use specific products you already have at home."
++    "answer": "Yes, we bring all our own supplies and equipment at no extra cost. We use pet- and child-safe, eco-friendly products by default — this matters a lot for Florida homes running AC constantly, since strong chemical fumes linger indoors. Let us know if you'd like us to use specific products you already have at home."
+   },
+   {
+     "question": "Are you insured and bonded?",
+@@ -17,7 +21,7 @@
+   },
+   {
+     "question": "How much does a typical cleaning cost?",
+-    "answer": "Pricing depends on home size and service type. As a general range, standard cleanings typically run $100-$180 and deep cleanings $180-$300 for an average 2-3 bedroom home. For an exact quote, I can collect a few details and get you an estimate."
++    "answer": "Pricing depends on home size and service type. As a general range, standard cleanings typically run $110-$190 and deep cleanings $190-$320 for an average 2-3 bedroom home. Move-in/move-out cleanings run similar to a deep clean. For an exact quote, I can collect a few details and get you an estimate."
+   },
+   {
+     "question": "Do you offer recurring/weekly/biweekly discounts?",
+@@ -34,5 +38,9 @@
+   {
+     "question": "How do I pay?",
+     "answer": "We accept card payments online after each cleaning, as well as cash or check by arrangement. Recurring clients can save a card on file for automatic billing."
++  },
++  {
++    "question": "Do you clean vacation rentals or Airbnbs?",
++    "answer": "Yes, we work with several short-term rental hosts in the Orlando area and can coordinate turnover cleanings around guest checkout/check-in times. Ask about our recurring turnover rate."
+   }
+ ]
+diff --git a/static/index.html b/static/index.html
+index a1dfc5b..1e6fa49 100644
+--- a/static/index.html
++++ b/static/index.html
+@@ -3,7 +3,7 @@
+ <head>
+ <meta charset="UTF-8" />
+ <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+-<title>Sparkle Clean Co. — Chat</title>
++<title>Bright Nest Cleaning Co. — Chat</title>
+ <style>
+   :root {
+     --brand: #2f9e44;
+@@ -156,7 +156,7 @@
+ <div id="chat-window">
+   <div id="chat-header">
+     <div>
+-      <div class="title">Sparkle Clean Co.</div>
++      <div class="title">Bright Nest Cleaning Co.</div>
+       <div class="subtitle">Usually replies in a few minutes</div>
+     </div>
+     <div style="display: flex; align-items: center; gap: 14px;">
